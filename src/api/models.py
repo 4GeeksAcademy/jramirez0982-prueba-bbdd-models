@@ -22,6 +22,47 @@ db = SQLAlchemy()
 
 #Se definen los posibles estados de la orden de servicio con tipo de datos ENUM
 
+
+
+class status(enum.Enum):
+    INGRESADO = 'Ingresado'
+    EN_PROCESO = 'En proceso'
+    FINALIZADO = 'Finalizado'
+
+
+class Orden_de_trabajo(db.Model):
+    __tablename__ = "orden_de_trabajo"
+    id_ot: Mapped[int] = mapped_column(primary_key = True)
+    nombre_cliente: Mapped[str] = mapped_column(String(80), nullable=False)
+    fecha_ingreso: Mapped[datetime.date] = mapped_column(Date, nullable=False)
+    estado_servicio: Mapped[status] = mapped_column(Enum(status, name="estado_orden"), nullable = False)
+    fecha_final: Mapped[datetime.date] = mapped_column(Date, nullable = False)
+    
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable=False)
+    vehiculo_id: Mapped[int] = mapped_column(ForeignKey("vehiculos.id_vehiculo"), nullable = False)
+    mecanico_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable = False)
+
+    #RELACIONES CON OTRAS TABLAS
+    cliente: Mapped["User"] = relationship(foreign_keys=[usuario_id], back_populates = "ordenes_cliente")
+    mecanico: Mapped["User"] = relationship(foreign_keys=[mecanico_id], back_populates = "ordenes_mecanico")
+    vehiculo: Mapped["Vehiculos"] = relationship(back_populates = "ordenes_trabajo")
+    servicios: Mapped[List["Servicio"]] = relationship(secondary = "auxOrdenServicio", back_populates= "ordenes")
+
+    def __str__(self):
+        return f'{self.id_ot}'
+    
+    def serialize(self):
+        return{
+            'id_ot': self.id_ot,
+            'nombre_cliente': self.nombre_cliente,
+            'fecha_ingreso': self.fecha_ingreso,
+            'estado_servicio': self.estado_servicio,
+            'fecha_final': self.fecha_final,
+            'usuario_id': self.usuario_id,
+            'vehiculo_id': self.vehiculo_id,
+            'mecanico_id': self.mecanico_id
+        }
+
 class AuxOrdenServicio(db.Model):
     __tablename__ = "auxOrdenServicio"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -57,7 +98,7 @@ class User(db.Model):
 
     #RELACIONES CON OTRAS TABLAS
     vehiculos: Mapped[List["Vehiculos"]] = relationship(back_populates = "user")
-    ordenes_cliente: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "cliente", foreign_keys = "orden_de_trabajo.user_id")
+    ordenes_cliente: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "cliente", foreign_keys = "Orden_de_trabajo.usuario_id")
     ordenes_mecanico: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates =  "mecanico", foreign_keys = "Orden_de_trabajo.mecanico_id")
 
     def __str__(self):
@@ -74,47 +115,6 @@ class User(db.Model):
             'rol': self.rol
             # do not serialize the password, its a security breach
          }
-
-
-class status(enum.Enum):
-    INGRESADO = 'Ingresado'
-    EN_PROCESO = 'En proceso'
-    FINALIZADO = 'Finalizado'
-
-
-class Orden_de_trabajo(db.Model):
-    __tablename__ = "orden_de_trabajo"
-    id_ot: Mapped[int] = mapped_column(primary_key = True)
-    nombre_cliente: Mapped[str] = mapped_column(String(80), nullable=False)
-    fecha_ingreso: Mapped[datetime.date] = mapped_column(Date, nullable=False)
-    estado_servicio: Mapped[status] = mapped_column(Enum(status, name="estado_orden"), nullable = False)
-    fecha_final: Mapped[datetime.date] = mapped_column(Date, nullable = False)
-    
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable=False)
-    vehiculo_id: Mapped[int] = mapped_column(ForeignKey("vehiculos.id_vehiculo"), nullable = False)
-    mecanico_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable = False)
-
-    #RELACIONES CON OTRAS TABLAS
-    cliente: Mapped["User"] = relationship(foreign_keys=[User.id_user], back_populates = "ordenes_cliente")
-    mecanico: Mapped["User"] = relationship(foreign_keys=[mecanico_id], back_populates = "ordenes_mecanico")
-    vehiculo: Mapped["Vehiculos"] = relationship(back_populates = "ordenes_trabajo")
-    servicios: Mapped[List["Servicio"]] = relationship(secondary = "AuxOrdenServicio", back_populates= "ordenes")
-
-    def __str__(self):
-        return f'{self.id_ot}'
-    
-    def serialize(self):
-        return{
-            'id_ot': self.id_ot,
-            'nombre_cliente': self.nombre_cliente,
-            'fecha_ingreso': self.fecha_ingreso,
-            'estado_servicio': self.estado_servicio,
-            'fecha_final': self.fecha_final,
-            'user_id': self.user_id,
-            'vehiculo_id': self.vehiculo_id,
-            'mecanico_id': self.mecanico_id
-        }
-
 
 
 class Vehiculos(db.Model):
@@ -150,7 +150,7 @@ class Servicio(db.Model):
     name_service: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     #RELACIONES CON OTRAS TABLAS
-    ordenes: Mapped[List["Orden_de_trabajo"]] = relationship(secondary="AuxOrdenServicio", back_populates="servicios")
+    ordenes: Mapped[List["Orden_de_trabajo"]] = relationship(secondary="auxOrdenServicio", back_populates="servicios")
 
     def __str__(self):
         return f'{self.name_service}'
