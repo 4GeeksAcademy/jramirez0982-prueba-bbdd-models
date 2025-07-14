@@ -28,6 +28,15 @@ class AuxOrdenServicio(db.Model):
     orden_id: Mapped[int] = mapped_column(ForeignKey("orden_de_trabajo.id_ot"), nullable = False)
     servicio_id: Mapped[int] = mapped_column(ForeignKey("servicio.id_service"), nullable = False)
 
+    def __str__(self):
+        return f'{self.id}'
+    
+    def serialize(self):
+        return{
+            'id': self.id,
+            'orden_id': self.orden_id,
+            'servicio_id': self.servicio_id
+        }
 
 class RolEnum(enum.Enum):
     MECANICO = 'Mecanico'
@@ -50,6 +59,21 @@ class User(db.Model):
     vehiculos: Mapped[List["Vehiculos"]] = relationship(back_populates = "user")
     ordenes_cliente: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "cliente", foreign_keys = "orden_de_trabajo.user_id")
     ordenes_mecanico: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates =  "mecanico", foreign_keys = "Orden_de_trabajo.mecanico_id")
+
+    def __str__(self):
+        return f'{self.nombre}'
+    
+    def serialize(self):
+         return {
+            'id_user': self.id_user,
+            'identificacion': self.identificacion,
+            'telefono': self.telefono,
+            'email': self.email,
+            'is_active': self.is_active,
+            'foto_usuario': self.foto_usuario,
+            'rol': self.rol
+            # do not serialize the password, its a security breach
+         }
 
 
 class status(enum.Enum):
@@ -76,6 +100,23 @@ class Orden_de_trabajo(db.Model):
     vehiculo: Mapped["Vehiculos"] = relationship(back_populates = "ordenes_trabajo")
     servicios: Mapped[List["Servicio"]] = relationship(secondary = "AuxOrdenServicio", back_populates= "ordenes")
 
+    def __str__(self):
+        return f'{self.id_ot}'
+    
+    def serialize(self):
+        return{
+            'id_ot': self.id_ot,
+            'nombre_cliente': self.nombre_cliente,
+            'fecha_ingreso': self.fecha_ingreso,
+            'estado_servicio': self.estado_servicio,
+            'fecha_final': self.fecha_final,
+            'user_id': self.user_id,
+            'vehiculo_id': self.vehiculo_id,
+            'mecanico_id': self.mecanico_id
+        }
+
+
+
 class Vehiculos(db.Model):
     __tablename__ = 'vehiculos'
     id_vehiculo: Mapped[int] = mapped_column(primary_key = True)
@@ -89,6 +130,19 @@ class Vehiculos(db.Model):
     user: Mapped["User"] = relationship(back_populates =  "vehiculos")
     ordenes_trabajo: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "vehiculo")
 
+    def __str__(self):
+        return f'{self.matricula}'
+    
+    def serialize(self):
+        return{
+            'id_vehiculo': self.id_vehiculo,
+            'matricula': self.matricula,
+            'marca': self.marca,
+            'modelo': self.modelo,
+            'year': self.year,
+            'user_id': self.user_id
+        }
+
 
 class Servicio(db.Model):
     __tablename__ = 'servicio'
@@ -97,3 +151,13 @@ class Servicio(db.Model):
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     #RELACIONES CON OTRAS TABLAS
     ordenes: Mapped[List["Orden_de_trabajo"]] = relationship(secondary="AuxOrdenServicio", back_populates="servicios")
+
+    def __str__(self):
+        return f'{self.name_service}'
+    
+    def serialize(self):
+        return{
+            'ide_service': self.id_service,
+            'name_service': self.name_service,
+            'price': self.price
+        }
