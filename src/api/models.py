@@ -46,7 +46,12 @@ class User(db.Model):
     foto_usuario: Mapped[str] = mapped_column(String(100))
     rol: Mapped[RolEnum] = mapped_column(Enum(RolEnum, name="rol_enum"), nullable=False)
 
-    
+    #RELACIONES CON OTRAS TABLAS
+    vehiculos: Mapped[List["Vehiculos"]] = relationship(back_populates = "user")
+    ordenes_cliente: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "cliente", foreign_keys = "orden_de_trabajo.user_id")
+    ordenes_mecanico: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates =  "mecanico", foreign_keys = "Orden_de_trabajo.mecanico_id")
+
+
 class status(enum.Enum):
     INGRESADO = 'Ingresado'
     EN_PROCESO = 'En proceso'
@@ -65,6 +70,11 @@ class Orden_de_trabajo(db.Model):
     vehiculo_id: Mapped[int] = mapped_column(ForeignKey("vehiculos.id_vehiculo"), nullable = False)
     mecanico_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable = False)
 
+    #RELACIONES CON OTRAS TABLAS
+    cliente: Mapped["User"] = relationship(foreign_keys=[User.id_user], back_populates = "ordenes_cliente")
+    mecanico: Mapped["User"] = relationship(foreign_keys=[mecanico_id], back_populates = "ordenes_mecanico")
+    vehiculo: Mapped["Vehiculos"] = relationship(back_populates = "ordenes_trabajo")
+    servicios: Mapped[List["Servicio"]] = relationship(secondary = "AuxOrdenServicio", back_populates= "ordenes")
 
 class Vehiculos(db.Model):
     __tablename__ = 'vehiculos'
@@ -73,11 +83,17 @@ class Vehiculos(db.Model):
     marca: Mapped[str] = mapped_column(String(15), nullable = False)
     modelo: Mapped[str] = mapped_column(String(15), nullable = False)
     year: Mapped[int] = mapped_column(Integer, nullable = False)
-
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id_user"), nullable = False)
-  
+    
+    #RELACIONES
+    user: Mapped["User"] = relationship(back_populates =  "vehiculos")
+    ordenes_trabajo: Mapped[List["Orden_de_trabajo"]] = relationship(back_populates = "vehiculo")
+
+
 class Servicio(db.Model):
     __tablename__ = 'servicio'
     id_service: Mapped[int] = mapped_column(primary_key = True)
     name_service: Mapped[str] = mapped_column(String(100), nullable=False)
     price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    #RELACIONES CON OTRAS TABLAS
+    ordenes: Mapped[List["Orden_de_trabajo"]] = relationship(secondary="AuxOrdenServicio", back_populates="servicios")
